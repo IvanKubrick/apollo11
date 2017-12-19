@@ -1,22 +1,22 @@
 const CONFIGS = {
     planetDistance: 1000,
-    mapWidth: 2000,
+    mapWidth: 3000,
     mapHeight: 12000,
+    gameWidth: window.innerWidth * window.devicePixelRatio,
+    gameHeight: window.innerHeight * window.devicePixelRatio,
     skyHeight: 1000,
     groundHeight: 50,
     rocketMaxVelocity: 300,
     rocketAcceleration: 150,
     fuelIncreaseAmount: 10,
     cloudsSpeed: 0.4,
-    asteroidsAverageSpeed: 50,
+    asteroidsAverageSpeed: 100,
     asteroidsAverageDamage: 10,
-    fuelCansAmount: 200,
-    asteroidsAmount: 250
+    fuelCansAmount: 150,
+    asteroidsAmount: 200
 };
 
-const gameField = document.querySelector('.game-field');
-
-const game = new Phaser.Game(800, 600, Phaser.AUTO, gameField, {preload: preload, create: create, update: update, render: render});
+const game = new Phaser.Game(CONFIGS.gameWidth, CONFIGS.gameHeight, Phaser.CANVAS, '', {preload: preload, create: create, update: update, render: render});
 
 function preload() {
     game.load.audio('openingSound', 'assets/audio/opening.mp3');
@@ -192,25 +192,25 @@ function create() {
 
     // timer
     const timerStyle = {
-        font: '20px Arial', 
-        fill: '#b40000'
+        font: '25px Arial', 
+        fill: '#fff'
     };
     timer = game.add.text(5, 20, 'Time: ', timerStyle);
     timer.startTime = -1;
     timer.fixedToCamera = true;
 
     // tasks
-    let screen = game.add.sprite(792, 592, 'screen');
+    let screen = game.add.sprite(CONFIGS.gameWidth - 3, CONFIGS.gameHeight - 3, 'screen');
     screen.anchor.set(1);
     screen.fixedToCamera = true;
 
     const reachStyle = {
         font: '20px Arial',
-        fill: '#b40000'
+        fill: '#ccc'
     };
-    reachMoonText = game.add.text(620, 510, 'reach the moon', reachStyle);
+    reachMoonText = game.add.text(CONFIGS.gameWidth - 190, CONFIGS.gameHeight - 90, 'reach the moon', reachStyle);
     reachMoonText.fixedToCamera = true;
-    reachEarthText = game.add.text(620, 550, 'get back to Earth', reachStyle);
+    reachEarthText = game.add.text(CONFIGS.gameWidth - 190, CONFIGS.gameHeight - 50, 'get back to Earth', reachStyle);
     reachEarthText.fixedToCamera = true;
 
     // game over text
@@ -232,17 +232,13 @@ function create() {
     winText.fixedToCamera = true;
     winText.alpha = 0;
 
-    // easy-mode button
-    let easyModeButton = game.add.sprite(600, CONFIGS.mapHeight - 10, 'fuelBar');
-    easyModeButton.inputEnabled = true;
-    easyModeButton.events.onInputDown.add(turnOnEasyMode, this);
-    
+    // easy mode
+    easyModeKey = game.input.keyboard.addKey(Phaser.Keyboard.E);
+    easyModeKey.onDown.add(turnOnEasyMode, this); 
     function turnOnEasyMode() {
         if (timer.startTime < 0 ){  
             asteroids.setAll('body.velocity.x', 0);
             asteroids.setAll('body.velocity.y', 0); 
-            rocket.body.maxVelocity.set(300);
-            easyModeButton.alpha = 0;
         }
     }
 }
@@ -266,7 +262,7 @@ function update() {
     // space entering
     if (rocket.y < CONFIGS.mapHeight - CONFIGS.skyHeight) {
         if (rocket.wentIntoSpace === false) {
-            openingSound.play('', 0, 0.7);
+            openingSound.play('', 0, 0.5);
             rocket.wentIntoSpace = true;    
         }
     }
@@ -275,7 +271,7 @@ function update() {
     rocket.body.acceleration.set(0);
     rocket.body.angularVelocity = 0;
 
-    if (fuelBar.fuelAmount > 0) {
+    if (fuelBar.fuelAmountPercent > 0) {
         if (cursors.up.isDown) {
             game.physics.arcade.accelerationFromRotation(rocket.rotation, CONFIGS.rocketAcceleration, rocket.body.acceleration);
             fuelBar.decreaseFuel(0.2);
@@ -298,16 +294,16 @@ function update() {
 
     // asteroids movement
     asteroids.children.forEach(asteroid => {
-        if (asteroid.x < -asteroid.width) {
-            asteroid.x = CONFIGS.mapWidth;
+        if (asteroid.x < 0 - asteroid.width) {
+            asteroid.x = CONFIGS.mapWidth + asteroid.width;
         }
         if (asteroid.x > CONFIGS.mapWidth + asteroid.width) {
-            asteroid.x = 0;
+            asteroid.x = 0 - asteroid.width;
         }
         if (asteroid.y > CONFIGS.mapHeight - CONFIGS.skyHeight) {
             asteroid.y = 0;
         }
-        if (asteroid.y < -asteroid.height) {
+        if (asteroid.y < 0 - asteroid.height) {
             asteroid.y = CONFIGS.mapHeight - CONFIGS.skyHeight;
         }
     });
@@ -337,7 +333,7 @@ function update() {
     }
 
     // game over 
-    if(rocket.body.velocity.getMagnitude() === 0 && fuelBar.fuelAmount === 0 && rocket.gotBack === false) {
+    if(rocket.body.velocity.getMagnitude() === 0 && fuelBar.fuelAmountPercent === 0 && rocket.gotBack === false) {
         gameOverText.alpha = 1;
         game.input.keyboard.enabled = false;
         timer.alpha = 0;
@@ -346,7 +342,7 @@ function update() {
     // win
     if (collisionWithGround) {
         if (rocket.reachedMoon === true && rocket.gotBack === false) {
-            endingSound.play('', 0, 0.7);
+            endingSound.play('', 0, 0.5);
             reachEarthText.addColor('#067906', 0);
             rocket.gotBack = true;
 
@@ -359,6 +355,13 @@ function update() {
 
 }
 
+function render() {
+    // game.debug.body(rocket);
+    // game.debug.body(moon);
+    // asteroids.children.forEach( asteroid => game.debug.body(asteroid));
+    // fuelCans.children.forEach( fuelCan => game.debug.body(fuelCan));
+}
+
 function collectFuel(rocket, fuelCan) {
     fuelCollectionSound.play('', 0, 0.3);
     fuelBar.increaseFuel();
@@ -369,9 +372,9 @@ function destroyAsteroid(rocket, asteroid) {
     explosionSound.play('', 0, 0.3);
 
     if (asteroid.destroyed === false) {
-        fuelBar.decreaseFuel(CONFIGS.asteroidsAverageDamage * asteroid.scale.y);
+        fuelBar.decreaseFuel( CONFIGS.asteroidsAverageDamage * (1 + asteroid.scale.y) );
         asteroid.destroyed = true;
-        game.physics.arcade.velocityFromRotation( rocket.rotation, rocket.body.velocity.getMagnitude() * 0.8, rocket.body.velocity );
+        game.physics.arcade.velocityFromRotation( rocket.rotation, rocket.body.velocity.getMagnitude() * 0.6, rocket.body.velocity );
     } 
 
     asteroid.animations.play('explosion');
@@ -390,36 +393,32 @@ function setFlag() {
     }
 }
 
-function render() {
-    // game.debug.body(rocket);
-    // game.debug.body(moon);
-    // asteroids.children.forEach( asteroid => game.debug.body(asteroid));
-    // fuelCans.children.forEach( fuelCan => game.debug.body(fuelCan));
-}
-
 class FuelBar extends Phaser.Group {
     constructor() {
         super(game);
         this.bar = this.create(0, 0, 'fuelBar');
-        this.fuelAmount = 80;
-        this.bar.scale.setTo(this.fuelAmount, 2);
+        this.fuelAmountPercent = 100;
+        this.renderBar();
     }
     decreaseFuel(n) {
-        this.fuelAmount -= n;
-        if (this.fuelAmount < 0) {
-            this.fuelAmount = 0;
+        this.fuelAmountPercent -= n;
+        if (this.fuelAmountPercent < 0) {
+            this.fuelAmountPercent = 0;
         }
-        this.bar.scale.setTo(this.fuelAmount, 2);
+        this.renderBar();
     } 
     increaseFuel() {
-        this.fuelAmount += CONFIGS.fuelIncreaseAmount;
-        if (this.fuelAmount > 80) {
-            this.fuelAmount = 80;
+        this.fuelAmountPercent += CONFIGS.fuelIncreaseAmount;
+        if (this.fuelAmountPercent > 100) {
+            this.fuelAmountPercent = 100;
         }
-        this.bar.scale.setTo(this.fuelAmount, 2);
+        this.renderBar();
+    }
+    renderBar() {
+        this.bar.scale.setTo(CONFIGS.gameWidth / 1000 * this.fuelAmountPercent, 2);
     }  
 }
 
 function makeArray(n) {
-    return Array(n).fill().map((el,i) => i);
+    return Array(n).fill().map((el, i) => i);
 }
