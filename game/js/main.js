@@ -96,14 +96,16 @@ function create() {
     planets.create(CONFIGS.mapWidth / 2, CONFIGS.mapHeight - 8 * CONFIGS.planetDistance, 'neptune');
     planets.create(CONFIGS.mapWidth / 2, CONFIGS.mapHeight - 9 * CONFIGS.planetDistance, 'pluto');
     planets.create(CONFIGS.mapWidth / 2, CONFIGS.mapHeight - 10 * CONFIGS.planetDistance, 'sun');
-    // moon
     moon = planets.create(CONFIGS.mapWidth / 2, CONFIGS.mapHeight - 11 * CONFIGS.planetDistance, 'moon');
-    moon.anchor.set(0.5);
-    moon.scale.setTo(1.5);
+    
+    planets.children.forEach(el => {
+        el.anchor.set(0.5);
+        el.scale.setTo(1.5);
+    });
+
+    // moon
     game.physics.enable(moon, Phaser.Physics.ARCADE);
     moon.body.setCircle(150, 50, 50);
-
-    planets.children.forEach( el => el.anchor.set(0.5) );
     
     // flag
     flag = game.add.sprite(moon.x, moon.y, 'flag');
