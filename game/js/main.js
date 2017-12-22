@@ -234,7 +234,7 @@
         winText.alpha = 0;
 
         // easy mode
-        easyModeKey = game.input.keyboard.addKey(Phaser.Keyboard.E);
+        const easyModeKey = game.input.keyboard.addKey(Phaser.Keyboard.E);
         easyModeKey.onDown.add(turnOnEasyMode, this); 
         function turnOnEasyMode() {
             if (timer.startTime < 0 ){  
@@ -320,7 +320,7 @@
         // overlapping
         game.physics.arcade.overlap(rocket, fuelCans, collectFuel, null, this);
         game.physics.arcade.overlap(rocket, asteroids, destroyAsteroid, null, this);
-        game.physics.arcade.overlap(rocket, moon, setFlag, null, this);
+        game.physics.arcade.overlap(rocket, moon, setFlag);
 
         // timer
         let currentTime = Math.floor(game.time.now) - timer.startTime;
